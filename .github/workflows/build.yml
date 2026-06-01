@@ -51,7 +51,7 @@ jobs:
           echo "VULKAN_HEADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-headers)" >> $GITHUB_ENV
           echo "VULKAN_LOADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-loader)" >> $GITHUB_ENV
 
-      - name: Configure
+      - name: Configure, Build and Install Wine
         working-directory: upstream/wine
         shell: bash
         run: |
@@ -82,16 +82,10 @@ jobs:
             FREETYPE_LIBS=/usr/local/lib/libfreetype.dylib \
             build_alias=x86_64-apple-darwin \
             host_alias=x86_64-apple-darwin
-
-      - name: Build
-        working-directory: upstream/wine
-        run: |
+            
           echo "Build"
           arch -x86_64 make -j"$(sysctl -n hw.ncpu)"
 
-      - name: Install
-        working-directory: upstream/wine
-        run: |
           echo "Install"
           arch -x86_64 make install
 
