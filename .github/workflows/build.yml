@@ -18,6 +18,11 @@ jobs:
         run: |
           sudo softwareupdate --install-rosetta --agree-to-license || true
 
+      - name: Install Intel Homebrew
+        run: |
+          arch -x86_64 /bin/bash -c \
+            "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+           
       - name: Install Intel Homebrew dependencies
         run: |
           arch -x86_64 /usr/local/bin/brew update
