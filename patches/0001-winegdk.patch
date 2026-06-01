@@ -1,3 +1,15 @@
+Subject: [PATCH] Integrate WineGDK into CrossOver Wine
+
+This patch applies the WineGDK modifications to the CodeWeavers 
+CrossOver source snapshot. 
+
+Conflicts in the following files were manually resolved:
+- dlls/twinapi.appcore/main.c
+- dlls/twinapi.appcore/classes.idl
+- dlls/twinapi.appcore/private.h
+
+Original WineGDK patch authored by WeatherOS and contributors.
+
 diff --git a/README.md b/README.md
 index 1e3c748c510..082bf849ebd 100644
 --- a/README.md

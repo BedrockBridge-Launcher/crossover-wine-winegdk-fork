@@ -1,0 +1,11 @@
+This project is based on:
+
+- Wine project (LGPL-2.1-or-later)
+- CodeWeavers CrossOver source distribution
+- WineGDK patchset (WeatherOS and contributors)
+
+Modifications include:
+- Integration of WineGDK patches
+- Manual resolution of patch conflicts (.rej files)
+
+This is an unofficial derivative work.
