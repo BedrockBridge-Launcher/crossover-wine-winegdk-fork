@@ -38,31 +38,27 @@ jobs:
         run: |
           brew install llvm bison lld
 
-      - name: Setup environment
-        run: |
-          echo "INTEL_BREW=/usr/local/bin/brew" >> $GITHUB_ENV
-          echo "INTEL_PREFIX=/usr/local" >> $GITHUB_ENV
-
-          echo "LLVM_BINDIR=$(brew --prefix llvm)/bin" >> $GITHUB_ENV
-          echo "LLD_BINDIR=$(brew --prefix lld)/bin" >> $GITHUB_ENV
-          echo "BISON_BINDIR=$(brew --prefix bison)/bin" >> $GITHUB_ENV
-
-          echo "MOLTENVK_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix molten-vk)" >> $GITHUB_ENV
-          echo "VULKAN_HEADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-headers)" >> $GITHUB_ENV
-          echo "VULKAN_LOADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-loader)" >> $GITHUB_ENV
-
-      - name: Configure, Build and Install Wine
+      - name: Setup environment & Configure, Build and Install Wine
         working-directory: upstream/wine
         shell: bash
         run: |
+          echo "Setup environment"
+          INTEL_BREW="/usr/local/bin/brew"
+          VULKAN_HEADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-headers)
+          VULKAN_LOADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-loader)
+          
+          export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+          
+          export CC="$(xcrun -f clang) -isysroot $SDKROOT"
+          export CXX="$(xcrun -f clang++) -isysroot $SDKROOT"
+
+          BISON_BIN=$(brew --prefix bison)/bin
+          LLD_BIN=$(brew --prefix lld)/bin
+          LLVM_BIN=$(brew --prefix llvm)/bin
+
+          export PATH="$BISON_BIN:$LLD_BIN:$PATH"
+
           echo "Configure"
-          export PATH="$(brew --prefix bison)/bin:$(brew --prefix lld)/bin:$PATH"
-
-          export SDKROOT="$(xcrun --show-sdk-path)"
-
-          export CC="$(xcrun -f clang)"
-          export CXX="$(xcrun -f clang++)"
-
           mkdir -p stage
 
           arch -x86_64 ./configure \
@@ -73,13 +69,14 @@ jobs:
             LDFLAGS="-L$VULKAN_LOADER_DIR/lib -L/usr/local/lib -Wl,-rpath,@loader_path/../lib" \
             x86_64_CC="$CC" \
             x86_64_CXX="$CXX" \
-            x86_64_CFLAGS="-O3" \
+            x86_64_CFLAGS="-O3 -isysroot $SDKROOT" \
             x86_64_LDFLAGS="-fuse-ld=lld" \
+            DLLTOOL="$LLVM_BIN/llvm-dlltool" \
             --enable-archs=x86_64 \
             --build=x86_64-apple-darwin \
             --host=x86_64-apple-darwin \
-            FREETYPE_CFLAGS=-I/usr/local/include/freetype2 \
-            FREETYPE_LIBS=/usr/local/lib/libfreetype.dylib \
+            FREETYPE_CFLAGS="-I/usr/local/include/freetype2" \
+            FREETYPE_LIBS="/usr/local/lib/libfreetype.dylib" \
             build_alias=x86_64-apple-darwin \
             host_alias=x86_64-apple-darwin
             
