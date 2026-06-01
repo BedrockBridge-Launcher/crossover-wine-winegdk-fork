@@ -49,12 +49,12 @@ jobs:
       - name: Configure
         shell: bash
         run: |
-	  export PATH="$(brew --prefix bison)/bin:$(brew --prefix lld)/bin:$PATH"
+          export PATH="$(brew --prefix bison)/bin:$(brew --prefix lld)/bin:$PATH"
 
           export SDKROOT="$(xcrun --show-sdk-path)"
-	  
-	  export CC="$(xcrun -f clang)"
-	  export CXX="$(xcrun -f clang++)"
+
+          export CC="$(xcrun -f clang)"
+          export CXX="$(xcrun -f clang++)"
 
           mkdir -p stage
 
@@ -64,8 +64,8 @@ jobs:
             CXX="$CXX" \
             "CFLAGS=-O3 -I/usr/local/include -I$VULKAN_HEADER_DIR/include --target=x86_64-apple-darwin" \
             "LDFLAGS=-L$VULKAN_LOADER_DIR/lib -L/usr/local/lib -Wl,-rpath,@loader_path/../lib" \
-            "x86_64_CC="$CC" \
-            "x86_64_CXX="$CXX" \
+            x86_64_CC="$CC" \
+            x86_64_CXX="$CXX" \
             "x86_64_CFLAGS=-O3" \
             "x86_64_LDFLAGS=-fuse-ld=lld" \
             --enable-archs=x86_64 \
