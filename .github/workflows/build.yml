@@ -49,6 +49,7 @@ jobs:
       - name: Configure
         shell: bash
         run: |
+          echo "Configure"
           export PATH="$(brew --prefix bison)/bin:$(brew --prefix lld)/bin:$PATH"
 
           export SDKROOT="$(xcrun --show-sdk-path)"
@@ -78,10 +79,12 @@ jobs:
 
       - name: Build
         run: |
+          echo "Build"
           arch -x86_64 make -j"$(sysctl -n hw.ncpu)"
 
       - name: Install
         run: |
+          echo "Install"
           arch -x86_64 make install
 
       - name: Create lib directory
@@ -91,6 +94,7 @@ jobs:
       - name: Bundle non-system dylibs
         shell: bash
         run: |
+          echo "Bundle non-system dylibs"
           copy_dep() {
             local file="$1"
 
@@ -118,6 +122,7 @@ jobs:
       - name: Recursive dependency collection
         shell: bash
         run: |
+          echo "Recursive dependency collection"
           changed=1
 
           while [ "$changed" = "1" ]; do
@@ -143,6 +148,7 @@ jobs:
       - name: Rewrite library references
         shell: bash
         run: |
+          echo "Rewrite library references"
           find stage -type f | while read file; do
 
             if ! file "$file" | grep -q "Mach-O"; then
@@ -166,6 +172,7 @@ jobs:
       - name: Set install names for bundled dylibs
         shell: bash
         run: |
+          echo "Set install names for bundled dylibs"
           for dylib in stage/lib/*.dylib; do
             [ -e "$dylib" ] || continue
 
@@ -177,6 +184,7 @@ jobs:
       - name: Verify no Homebrew references remain
         shell: bash
         run: |
+          echo "Verify no Homebrew references remain"
           BAD=0
 
           while read file; do
@@ -199,6 +207,7 @@ jobs:
 
       - name: Create ZIP
         run: |
+          echo "Create ZIP"
           ditto -c -k --sequesterRsrc --keepParent stage wine-macos-x86_64.zip
 
       - name: Upload ZIP
