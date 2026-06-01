@@ -63,7 +63,7 @@ These conflicts have been manually resolved. Specifically, adjustments were made
 ```
    For general build prerequisites, please refer to the official [WineHQ Building Guide](https://wiki.winehq.org/Building_Wine).
 
-4. **Compile (macOS / Apple Silicon via Rosetta):
+4. **Compile (macOS / Apple Silicon via Rosetta):**
    Building this branch on macOS, specifically on Apple Silicon (M1/M2/M3) using Rosetta for x86_64 architecture, requires a highly customized configure command.
    Ensure you have all dependencies (like LLVM, Vulkan loader, and FreeType) installed via Homebrew or manually, and export their paths appropriately (e.g., `$STAGE`, `$VULKAN_HEADER_DIR`, etc.). Then use the following configuration:
 ```bash
