@@ -84,11 +84,13 @@ jobs:
             host_alias=x86_64-apple-darwin
 
       - name: Build
+        working-directory: upstream/wine
         run: |
           echo "Build"
           arch -x86_64 make -j"$(sysctl -n hw.ncpu)"
 
       - name: Install
+        working-directory: upstream/wine
         run: |
           echo "Install"
           arch -x86_64 make install
