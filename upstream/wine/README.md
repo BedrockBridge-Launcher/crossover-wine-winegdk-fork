@@ -1,3 +1,19 @@
+# NOTES FOR PEOPLE TRYING TO RUN MINECRAFT'S GDK BUILD
+
+Microsoft Services have not been added yet. This is because `XUser` hasn't been implemented in `xgameruntime.dll` yet.
+
+As of [3414250](https://github.com/Weather-OS/WineGDK/commit/341425050f4f9b968b807dbd61942dabca8f6af1), Online functionality has been implemented. To get it working, resort to [GDK-Proton](https://github.com/Weather-OS/GDK-Proton)
+
+### NOTES ABOUT THIS PROJECT
+
+Unfortunately, since I don't have the right conditions to be able to   
+push my changes upstream, I've decided to declare every part of my contributions that isn't    
+derived from other parts of the wine project, CC0 (A.K.A "Public Domain") (i.e xgameruntime).
+**What this means**:  
+You're allowed to derive, redistribute and reimplement my code at will,  
+without any attributions.
+**THIS ONLY APPLIES TO THE CODE I HAVE WRITTEN, NOT THE REST OF WINE'S PROJECT!**
+
 ## INTRODUCTION
 
 Wine is a program which allows running Microsoft Windows programs
