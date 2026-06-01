@@ -1,0 +1,208 @@
+name: Build Wine macOS x86_64
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rosetta
+        run: |
+          sudo softwareupdate --install-rosetta --agree-to-license || true
+
+      - name: Install Intel Homebrew dependencies
+        run: |
+          arch -x86_64 /usr/local/bin/brew update
+
+          arch -x86_64 /usr/local/bin/brew install \
+            gnutls \
+            freetype \
+            vulkan-headers \
+            vulkan-loader \
+            molten-vk
+
+      - name: Install native build tools
+        run: |
+          brew install llvm bison lld
+
+      - name: Setup environment
+        run: |
+          echo "INTEL_BREW=/usr/local/bin/brew" >> $GITHUB_ENV
+          echo "INTEL_PREFIX=/usr/local" >> $GITHUB_ENV
+
+          echo "LLVM_BINDIR=$(brew --prefix llvm)/bin" >> $GITHUB_ENV
+          echo "LLD_BINDIR=$(brew --prefix lld)/bin" >> $GITHUB_ENV
+          echo "BISON_BINDIR=$(brew --prefix bison)/bin" >> $GITHUB_ENV
+
+          echo "MOLTENVK_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix molten-vk)" >> $GITHUB_ENV
+          echo "VULKAN_HEADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-headers)" >> $GITHUB_ENV
+          echo "VULKAN_LOADER_DIR=$(arch -x86_64 /usr/local/bin/brew --prefix vulkan-loader)" >> $GITHUB_ENV
+
+      - name: Configure
+        shell: bash
+        run: |
+	  export PATH="$(brew --prefix bison)/bin:$(brew --prefix lld)/bin:$PATH"
+
+          export SDKROOT="$(xcrun --show-sdk-path)"
+	  
+	  export CC="$(xcrun -f clang)"
+	  export CXX="$(xcrun -f clang++)"
+
+          mkdir -p stage
+
+          arch -x86_64 ./configure \
+            --prefix="$PWD/stage" \
+            CC="$CC" \
+            CXX="$CXX" \
+            "CFLAGS=-O3 -I/usr/local/include -I$VULKAN_HEADER_DIR/include --target=x86_64-apple-darwin" \
+            "LDFLAGS=-L$VULKAN_LOADER_DIR/lib -L/usr/local/lib -Wl,-rpath,@loader_path/../lib" \
+            "x86_64_CC="$CC" \
+            "x86_64_CXX="$CXX" \
+            "x86_64_CFLAGS=-O3" \
+            "x86_64_LDFLAGS=-fuse-ld=lld" \
+            --enable-archs=x86_64 \
+            --build=x86_64-apple-darwin \
+            --host=x86_64-apple-darwin \
+            FREETYPE_CFLAGS=-I/usr/local/include/freetype2 \
+            FREETYPE_LIBS=/usr/local/lib/libfreetype.dylib \
+            build_alias=x86_64-apple-darwin \
+            host_alias=x86_64-apple-darwin
+
+      - name: Build
+        run: |
+          arch -x86_64 make -j"$(sysctl -n hw.ncpu)"
+
+      - name: Install
+        run: |
+          arch -x86_64 make install
+
+      - name: Create lib directory
+        run: |
+          mkdir -p stage/lib
+
+      - name: Bundle non-system dylibs
+        shell: bash
+        run: |
+          copy_dep() {
+            local file="$1"
+
+            otool -L "$file" 2>/dev/null | tail -n +2 | awk '{print $1}' | while read dep; do
+
+              if [[ "$dep" == /usr/local/* ]]; then
+                base=$(basename "$dep")
+
+                if [ ! -f "stage/lib/$base" ]; then
+                  echo "Copying $base"
+                  cp "$dep" "stage/lib/"
+                fi
+              fi
+            done
+          }
+
+          export -f copy_dep
+
+          find stage -type f | while read f; do
+            if file "$f" | grep -q "Mach-O"; then
+              copy_dep "$f"
+            fi
+          done
+
+      - name: Recursive dependency collection
+        shell: bash
+        run: |
+          changed=1
+
+          while [ "$changed" = "1" ]; do
+            changed=0
+
+            for dylib in stage/lib/*.dylib; do
+              [ -e "$dylib" ] || continue
+
+              while read dep; do
+
+                if [[ "$dep" == /usr/local/* ]]; then
+                  base=$(basename "$dep")
+
+                  if [ ! -f "stage/lib/$base" ]; then
+                    cp "$dep" stage/lib/
+                    changed=1
+                  fi
+                fi
+              done < <(otool -L "$dylib" | tail -n +2 | awk '{print $1}')
+            done
+          done
+
+      - name: Rewrite library references
+        shell: bash
+        run: |
+          find stage -type f | while read file; do
+
+            if ! file "$file" | grep -q "Mach-O"; then
+              continue
+            fi
+
+            otool -L "$file" | tail -n +2 | awk '{print $1}' | while read dep; do
+
+              if [[ "$dep" == /usr/local/* ]]; then
+
+                base=$(basename "$dep")
+
+                install_name_tool \
+                  -change "$dep" \
+                  "@rpath/$base" \
+                  "$file" || true
+              fi
+            done
+          done
+
+      - name: Set install names for bundled dylibs
+        shell: bash
+        run: |
+          for dylib in stage/lib/*.dylib; do
+            [ -e "$dylib" ] || continue
+
+            install_name_tool \
+              -id "@rpath/$(basename "$dylib")" \
+              "$dylib" || true
+          done
+
+      - name: Verify no Homebrew references remain
+        shell: bash
+        run: |
+          BAD=0
+
+          while read file; do
+
+            if ! file "$file" | grep -q "Mach-O"; then
+              continue
+            fi
+
+            if otool -L "$file" | grep -q "/usr/local/"; then
+              echo "Found Homebrew dependency in:"
+              echo "$file"
+              BAD=1
+            fi
+
+          done < <(find stage -type f)
+
+          if [ "$BAD" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Create ZIP
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent stage wine-macos-x86_64.zip
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: wine-macos-x86_64
+          path: wine-macos-x86_64.zip
