@@ -77,7 +77,6 @@ jobs:
             x86_64_LDFLAGS="-fuse-ld=lld" \
             AR="$LLVM_BIN/llvm-ar" \
             RANLIB="$LLVM_BIN/llvm-ranlib" \
-            wine_cv_tools_winegcc_CC="$LLVM_BIN/clang" \
             --enable-archs=x86_64 \
             --build=x86_64-apple-darwin \
             --host=x86_64-apple-darwin \
@@ -87,10 +86,10 @@ jobs:
             host_alias=x86_64-apple-darwin
             
           echo "Build"
-          arch -x86_64 make -j"$(sysctl -n hw.ncpu)"
+          arch -x86_64 make -j"$(sysctl -n hw.ncpu)" WINEGCC_CC="$LLVM_BIN/clang"
 
           echo "Install"
-          arch -x86_64 make install
+          arch -x86_64 make install WINEGCC_CC="$LLVM_BIN/clang"
 
       - name: Create lib directory
         run: |
