@@ -66,13 +66,14 @@ jobs:
 
           arch -x86_64 ./configure \
             --prefix="${github_workspace}/stage" \
+            --disable-tests \
             CC="$CC" \
             CXX="$CXX" \
             CFLAGS="-O3 -I/usr/local/include -I$VULKAN_HEADER_DIR/include --target=x86_64-apple-darwin" \
             LDFLAGS="-L$VULKAN_LOADER_DIR/lib -L/usr/local/lib -Wl,-rpath,@loader_path/../lib" \
-            x86_64_CC="$CC" \
-            x86_64_CXX="$CXX" \
-            x86_64_CFLAGS="-O3 -isysroot $SDKROOT" \
+            x86_64_CC="$LLVM_BIN/clang" \
+            x86_64_CXX="$LLVM_BIN/clang++" \
+            x86_64_CFLAGS="-O3" \
             x86_64_LDFLAGS="-fuse-ld=lld" \
             --enable-archs=x86_64 \
             --build=x86_64-apple-darwin \
