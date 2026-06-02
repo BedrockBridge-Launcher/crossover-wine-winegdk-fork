@@ -75,6 +75,9 @@ jobs:
             x86_64_CXX="$LLVM_BIN/clang++" \
             x86_64_CFLAGS="-O3" \
             x86_64_LDFLAGS="-fuse-ld=lld" \
+            AR="$LLVM_BIN/llvm-ar" \
+            RANLIB="$LLVM_BIN/llvm-ranlib" \
+            wine_cv_tools_winegcc_CC="$LLVM_BIN/clang" \
             --enable-archs=x86_64 \
             --build=x86_64-apple-darwin \
             --host=x86_64-apple-darwin \
